@@ -1,6 +1,7 @@
 from tkinter import *
 import requests
 import MFRC522
+import threading
 
 continue_reading = True
 MIFAREReader = MFRC522.MFRC522()
@@ -40,16 +41,20 @@ def scanning():
             continue_reading = False
             cerca_utente(uid[0])
             
+    window.after(1000,scanning)            
+  
 
 window = Tk()
 window.geometry('350x200')
 window.title("prima Antonio")
 comm = Label(window, text="leggo utente", font=("Arial Bold", 6))
 comm.grid(column=1,row=1)
-btn=Button(window,text="CERCA",font=("Arial Bold", 6),command=scanning)
-btn.grid(column=1,row=2)
+#btn=Button(window,text="CERCA",font=("Arial Bold", 6),command=scanning)
+#btn.grid(column=1,row=2)
+window.after(1000,scanning)
 window.mainloop()
-
+#thread=threading.Thread(target=scanning)
+#thread.start()  
 
 
         
