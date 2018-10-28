@@ -12,6 +12,7 @@ def end_read(signal,frame):
     continue_reading = False
     
 def cerca_utente(uuid):
+
     
     print (str(uuid))
     r = requests.get("http://www.heritagexperience.com/mw/index.php?option=com_marketwall&task=marketwalltask.getusernamefromuuid&uuid="+str(uuid))
