@@ -110,7 +110,7 @@ class ApplicationWindow(Gtk.Window):
     def EventManager(self, event):
         if event.type == vlc.EventType.MediaPlayerEndReached:
             print ("Event reports - finished, playing next")
-            
+            self.is_player_active=False
             
     def doCycle(self):
 
@@ -120,17 +120,16 @@ class ApplicationWindow(Gtk.Window):
         try:
             
             #while visitModeOn:
-            print(urlGetStatus)
-            res = self.getResponse(urlGetStatus)
-            cont = json.loads(res.decode('utf-8'))
-            counter = 0
-            for item in cont:
-                counter += 1
-                visitModeOn=int(item["ModeVisitOn"])
-                ActualContent=item["ActualContent"]
-                MRL = "/home/pi/Videos/0"+ActualContent+".mp4"
-                
-                if self.is_player_active==False :
+            if self.is_player_active==False :
+                print(urlGetStatus)
+                res = self.getResponse(urlGetStatus)
+                cont = json.loads(res.decode('utf-8'))
+                counter = 0
+                for item in cont:
+                    counter += 1
+                    visitModeOn=int(item["ModeVisitOn"])
+                    ActualContent=item["ActualContent"]
+                    MRL = "/home/pi/Videos/0"+ActualContent+".mp4"
                     print(str(self.is_player_active))
                     self.player.set_mrl(MRL)
                     self.player.play()
