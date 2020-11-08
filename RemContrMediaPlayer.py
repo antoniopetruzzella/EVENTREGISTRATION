@@ -100,11 +100,18 @@ class ApplicationWindow(Gtk.Window):
         self.player = self.vlcInstance.media_player_new()
         win_id = widget.get_window().get_xid()
         self.player.set_xwindow(win_id)
-        self.player.set_mrl(MRL)
-        self.player.play()
+        #self.player.set_mrl(MRL)
+        #self.player.play()
         self.playback_button.set_image(self.pause_image)
-        self.is_player_active = True
+        #self.is_player_active = True
+        self.events = self.player.event_manager()
+        self.events.event_attach(vlc.EventType.MediaPlayerEndReached, self.EventManager)
         
+    def EventManager(self, event):
+        if event.type == vlc.EventType.MediaPlayerEndReached:
+            print ("Event reports - finished, playing next")
+            
+            
     def doCycle(self):
 
         visitModeOn=True
@@ -123,10 +130,11 @@ class ApplicationWindow(Gtk.Window):
                 ActualContent=item["ActualContent"]
                 MRL = "/home/pi/Videos/0"+ActualContent+".mp4"
                 
-                #if window.is_player_active==False :
-                print(MRL)
-                window.player.set_mrl(MRL)
-                window.player.play()
+                if self.is_player_active==False :
+                    print(str(self.is_player_active))
+                    self.player.set_mrl(MRL)
+                    self.player.play()
+                    self.is_player_active=True
             return True
         except KeyboardInterrupt:
             exit()
