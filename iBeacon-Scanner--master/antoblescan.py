@@ -26,7 +26,7 @@ for dev in devices:
     # print  the device's MAC address, its address type,
     # and Received Signal Strength Indication that shows how strong the signal was when the script received the broadcast.
     
-    #print ("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
+    print ("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
 
     # For each of the device's advertising data items, print a description of the data type and value of the data itself
     # getScanData returns a list of tupples: adtype, desc, value
@@ -35,9 +35,9 @@ for dev in devices:
     # desc is a human-readable description of the data type and value is the data itself
     for (adtype, desc, value) in dev.getScanData():
         #if desc=="Complete Local Name" and value=="AntoBLE":
-        #print ("RSSI=%d DB %s = %s" % (dev.rssi, desc, dev.getValueText(255)))
+        print ("RSSI=%d DB %s = %s" % (dev.rssi, desc, dev.getValueText(255)))
         uuid = value[8:40]
-        
+        print("uuid:"+uuid)
         if uuid[-4:]=="1982":
             print("UUID: "+uuid)
             print ("MAJOR: "+str(int("0x"+str(value[40:44]),16)))

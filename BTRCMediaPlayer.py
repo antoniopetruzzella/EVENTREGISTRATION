@@ -8,7 +8,7 @@ gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 import vlc
 from gi.repository import GObject
-
+from bluepy.bluepy.btle import Scanner, DefaultDelegate, Peripheral,UUID
 MRL="";
 RemoteDeviceId=1
 urlGetSerial = 'http://demo.ggallery.it/GGARBACK/index.php?option=com_ggne&task=remotecontroller.getserial'
@@ -65,7 +65,11 @@ class ApplicationWindow(Gtk.Window):
         self.vbox.pack_start(self.hbox, False, False, 0)
         
     def runDoCycle(self):
-        GObject.timeout_add(3000,self.doCycle)
+        print ("cerco di connettermi")
+        per=Peripheral("d7:84:e7:e2:87:68")
+        #per.setDelegate( MyDelegate() )
+        print("connessione avvenuta")
+        GObject.timeout_add(3000,self.doCycle,per)
         
     def stop_player(self, widget, data=None):
         self.player.stop()
@@ -112,7 +116,7 @@ class ApplicationWindow(Gtk.Window):
             print ("Event reports - finished, playing next")
             self.is_player_active=False
             
-    def doCycle(self):
+    def doCycle(self,per):
 
         visitModeOn=True
         #print('ciao')
@@ -121,20 +125,26 @@ class ApplicationWindow(Gtk.Window):
             
             #while visitModeOn:
             if self.is_player_active==False :
-                #print(urlGetStatus)
-                res = self.getResponse(urlGetStatus)
-                cont = json.loads(res.decode('utf-8'))
-                counter = 0
-                for item in cont:
-                    counter += 1
-                    visitModeOn=int(item["ModeVisitOn"])
-                    ActualContent=item["ActualContent"]
-                    #print(ActualContent)
-                    MRL = "/home/pi/Videos/0"+ActualContent+".mp4"
-                    print(str(self.is_player_active))
-                    self.player.set_mrl(MRL)
-                    self.player.play()
-                    self.is_player_active=True
+                c=per.getServices()
+                for cc in c:
+                    #print ("serv. uuid"+cc.uuid.getCommonName())
+                    if cc.uuid.getCommonName()=="19b10000-e8f2-537e-4f6c-d104768a1214":
+                        #print("trovato il servizio")    
+                        ccc=cc.getCharacteristics()
+                        for cccc in ccc:
+                            print("char. uuid: "+ cccc.uuid.getCommonName())
+                            #print("char. value"+str(cccc.read()))
+                            print("char. value: "+str(int.from_bytes(cccc.read(),byteorder='little', signed=True)))
+                            if cccc.uuid.getCommonName()=="19b10001-e8f2-537e-4f6c-d104768a1214":
+                                ActualContent=int.from_bytes(cccc.read(),byteorder='little', signed=True)
+                                MRL = "/home/pi/Videos/0"+str(ActualContent)+".mp4"
+                                print(str(self.is_player_active))
+                                print(MRL)
+                                self.player.set_mrl(MRL)
+                                self.player.play()
+                                self.is_player_active=True
+                                return True
+                    #per.disconnect()
             return True
         except KeyboardInterrupt:
             exit()
