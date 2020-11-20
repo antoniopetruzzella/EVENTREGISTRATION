@@ -4,7 +4,7 @@ import gi
 import urllib.request
 import json
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk,GLib
+from gi.repository import Gtk,GLib,Gdk
 gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
 import vlc
@@ -23,6 +23,7 @@ class ApplicationWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="POSTAZIONE UNO")
         self.player_paused=False
         self.is_player_active = False
+        self.is_fullscreen=False
         self.connect("destroy",Gtk.main_quit)
            
     def show(self):
@@ -113,7 +114,7 @@ class ApplicationWindow(Gtk.Window):
         self.player.set_mrl(MRL)
         self.player.play()
         self.playback_button.set_image(self.pause_image)
-        #self.is_player_active = True
+        
         self.events = self.player.event_manager()
         self.events.event_attach(vlc.EventType.MediaPlayerEndReached, self.EventManager)
         
@@ -133,7 +134,7 @@ class ApplicationWindow(Gtk.Window):
         try:
             
             #while visitModeOn:
-            print("stato player:",str(self.is_player_active))
+            #print("stato player:",str(self.is_player_active))
             if self.is_player_active==False :
                 c=per.getServices()
                 
@@ -144,7 +145,7 @@ class ApplicationWindow(Gtk.Window):
                             #print("trovato il servizio")    
                             ccc=cc.getCharacteristics()
                             for cccc in ccc:
-                                print("char. uuid: "+ cccc.uuid.getCommonName())
+                                #print("char. uuid: "+ cccc.uuid.getCommonName())
                                 #print("char. value"+str(cccc.read()))
                                 #print("char. value: "+str(int.from_bytes(cccc.read(),byteorder='little', signed=True)))
                                 try:    
@@ -152,7 +153,7 @@ class ApplicationWindow(Gtk.Window):
                                     if cccc.uuid.getCommonName()=="19b10001-e8f2-537e-4f6c-d104768a1215":
                                         
                                         
-                                        print("secondo char:", value.decode('utf-8'))
+                                        #print("secondo char:", value.decode('utf-8'))
                                         Username=value.decode('utf-8')
                                         self.name_label.set_text("utente connesso: "+Username)
                                     if cccc.uuid.getCommonName()=="19b10001-e8f2-537e-4f6c-d104768a1214":
@@ -161,19 +162,19 @@ class ApplicationWindow(Gtk.Window):
                                         ActualContent=int.from_bytes(value,byteorder='little', signed=True)
                                         MRL = "/home/pi/Videos/0"+str(ActualContent)+".mp4"
                                         #print("stato player:",str(self.is_player_active))
-                                        print(MRL)
+                                        #print(MRL)
                                         
                                         if os.path.isfile(MRL):
                                             self.player.set_mrl(MRL)
                                             self.player.play()
                                             self.is_player_active=True
                                         else:
-                                            print("file mancante")
+                                            #print("file mancante")
                                             self.is_player_active=False
                                         
                                             
                                 except:
-                                    print("error in read charact. value:", sys.exc_info()[0])
+                                    #print("error in read charact. value:", sys.exc_info()[0])
                                     self.is_player_active=False
                                     pass
                     except:
@@ -198,18 +199,27 @@ class ApplicationWindow(Gtk.Window):
 
     def fullscreen_toggler(self, widget, ev):
         #
-        #key = Gtk.Gdk.keyval_name(ev.keyval)
-        #if ev.keyval == keysym:
-        #print("premuto:"+str(ev.keyval))
-        if ev.keyval==65480:
-            window.unfullscreen()
         
+        if ev.keyval==65480:
+            print("is_fullscreen",self.is_fullscreen)
+            if self.is_fullscreen:
+                window.unfullscreen()
+                print("tolgo")
+            else:
+                window.fullscreen()
+                print("metto")
+                
+    def on_window_state_event(self, widget, ev):
+        self.is_fullscreen = bool(Gdk.WindowState.FULLSCREEN & ev.new_window_state)
+
 MRL = "/home/pi/Pictures/panorama-toscana.jpg"
 Username=""
+
 window = ApplicationWindow()
 window.setup_objects_and_events()
 window.connect('key-press-event', window.fullscreen_toggler)
-window.fullscreen()
+window.connect("window-state-event", window.on_window_state_event)
+#window.fullscreen()
 window.show()
 window.runDoCycle()
 Gtk.main()
