@@ -1,3 +1,4 @@
+import os.path
 import sys
 import gi
 import urllib.request
@@ -12,7 +13,7 @@ from gi.repository import GObject
 MRL="";
 RemoteDeviceId=1
 urlGetSerial = 'http://demo.ggallery.it/GGARBACK/index.php?option=com_ggne&task=remotecontroller.getserial'
-urlGetStatus = 'http://demo.ggallery.it/GGARBACK/index.php?option=com_ggne&task=remotecontroller.getstatus&RemoteDeviceId='+str(RemoteDeviceId)
+urlGetStatus = 'http://demo.ggallery.it/GGARBACK/index.php?option=com_ggne&task=remotecontroller.getstatus&RemoteDeviceID='+str(RemoteDeviceId)
 
 
 
@@ -28,72 +29,24 @@ class ApplicationWindow(Gtk.Window):
         self.show_all()
         
     def setup_objects_and_events(self):
-        self.playback_button = Gtk.Button()
-        self.stop_button = Gtk.Button()
-        
-        self.play_image = Gtk.Image.new_from_icon_name(
-                "gtk-media-play",
-                Gtk.IconSize.MENU
-            )
-        self.pause_image = Gtk.Image.new_from_icon_name(
-                "gtk-media-pause",
-                Gtk.IconSize.MENU
-            )
-        self.stop_image = Gtk.Image.new_from_icon_name(
-                "gtk-media-stop",
-                Gtk.IconSize.MENU
-            )
-        
-        self.playback_button.set_image(self.play_image)
-        self.stop_button.set_image(self.stop_image)
-        
-        self.playback_button.connect("clicked", self.toggle_player_playback)
-        self.stop_button.connect("clicked", self.stop_player)
-        
+       
         self.draw_area = Gtk.DrawingArea()
         self.draw_area.set_size_request(300,300)
-        
         self.draw_area.connect("realize",self._realized)
-        
+        self.name_label=Gtk.Label()
+        self.name_label.set_text("in attesa di connessione")
+        self.name_label.set_property("height-request", 30)
         self.hbox = Gtk.Box(spacing=6)
-        self.hbox.pack_start(self.playback_button, True, True, 0)
-        self.hbox.pack_start(self.stop_button, True, True, 0)
-        
         self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.vbox)
         self.vbox.pack_start(self.draw_area, True, True, 0)
         self.vbox.pack_start(self.hbox, False, False, 0)
+        self.hbox.pack_start(self.name_label,True, True,0)
         
     def runDoCycle(self):
         GObject.timeout_add(3000,self.doCycle)
         
-    def stop_player(self, widget, data=None):
-        self.player.stop()
-        self.is_player_active = False
-        self.playback_button.set_image(self.play_image)
-        
-    def toggle_player_playback(self, widget, data=None):
-
-        """
-        Handler for Player's Playback Button (Play/Pause).
-        """
-
-        if self.is_player_active == False and self.player_paused == False:
-            self.player.play()
-            self.playback_button.set_image(self.pause_image)
-            self.is_player_active = True
-
-        elif self.is_player_active == True and self.player_paused == True:
-            self.player.play()
-            self.playback_button.set_image(self.pause_image)
-            self.player_paused = False
-
-        elif self.is_player_active == True and self.player_paused == False:
-            self.player.pause()
-            self.playback_button.set_image(self.play_image)
-            self.player_paused = True
-        else:
-            pass
+   
         
     def _realized(self, widget, data=None):
         self.vlcInstance = vlc.Instance("--no-xlib")
@@ -102,7 +55,7 @@ class ApplicationWindow(Gtk.Window):
         self.player.set_xwindow(win_id)
         #self.player.set_mrl(MRL)
         #self.player.play()
-        self.playback_button.set_image(self.pause_image)
+        
         #self.is_player_active = True
         self.events = self.player.event_manager()
         self.events.event_attach(vlc.EventType.MediaPlayerEndReached, self.EventManager)
@@ -120,33 +73,62 @@ class ApplicationWindow(Gtk.Window):
         try:
             
             #while visitModeOn:
-            if self.is_player_active==False :
-                #print(urlGetStatus)
+            if self.is_player_active==False : #PRIMA DI TUTTO NON DEVE ESSERCI VIDEO ON
+                print(urlGetStatus)
                 res = self.getResponse(urlGetStatus)
                 cont = json.loads(res.decode('utf-8'))
                 counter = 0
                 for item in cont:
                     counter += 1
-                    visitModeOn=int(item["ModeVisitOn"])
-                    ActualContent=item["ActualContent"]
+                    sessionUser=item["SessionUser"]
+                    sessionCode=item["SessionCode"]
+                    sessionModeStatus=int(item["SessionModeStatus"])
+                    actualContent=item["ActualContent"]
                     #print(ActualContent)
-                    MRL = "/home/pi/Videos/0"+ActualContent+".mp4"
-                    print(str(self.is_player_active))
-                    self.player.set_mrl(MRL)
-                    self.player.play()
-                    self.is_player_active=True
+                    if sessionModeStatus==1: #la sessione è aperta
+                        if sessionUser!=None: # la sessione è proprietà
+                            self.name_label.set_text(sessionUser)
+                            if actualContent!=None:
+                                MRL = "/home/pi/Videos/0"+actualContent+"_.mp4"
+                            else:
+                                MRL = "/home/pi/Pictures/panorama-toscana.jpg"
+                            print(str(self.is_player_active))
+                            if os.path.isfile(MRL):
+                                self.is_player_active=True
+                            else:
+                                #print("file mancante")
+                                MRL = "/home/pi/Pictures/panorama-toscana.jpg"
+                                self.is_player_active=False
+                            self.player.set_mrl(MRL)
+                            self.player.play()
+                        else: #non c'è sessionUser
+                            print ("manca il sessionUser")
+                            #allora devo mettere a monitor il prossimo codice
+                            #libero
+                            self.name_label.set_text("devi inserire il codice: "+sessionCode)
+                            MRL = "/home/pi/Pictures/panorama-toscana.jpg"
+                            self.player.set_mrl(MRL)
+                            self.player.play()
+                            
+                    else: #la Sessione è finita
+                        print ("sessione finita")
+                        
+                        #allora devo produrre una nuova riga di sessione
+                        #con codice e utente null
+                        
             return True
         except KeyboardInterrupt:
             exit()
 
+    
     def getResponse(self,url):
         with urllib.request.urlopen(url) as response:
             return response.read()
 
 
 
-        
-#MRL = "/home/pi/Videos/04.mp4"
+MRL = "/home/pi/Pictures/panorama-toscana.jpg"
+Username=""
 window = ApplicationWindow()
 window.setup_objects_and_events()
 window.show()
